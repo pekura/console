@@ -18,7 +18,7 @@ import {
   MicroFrontend
 } from '../../shared/datamodel/k8s/microfrontend';
 
-describe('MicrofrontendViewComponent', () => {
+describe('ExternalViewComponent', () => {
   let component: ExternalViewComponent;
   let fixture: ComponentFixture<ExternalViewComponent>;
   let extensionsService: ExtensionsService;
@@ -37,73 +37,12 @@ describe('MicrofrontendViewComponent', () => {
     }
   }
 
-  const frontend: IMicroFrontend = {
-    metadata: {
-      name: 'testId',
-      uid: 'uid'
-    },
-    status: {
-      phase: 'ok'
-    },
-    data: {
-      data1: 'data'
-    },
-    type: 'type',
-    spec: {
-      location:
-        'https://pl.wikipedia.org/wiki/Wikipedia:Strona_g%C5%82%C3%B3wna'
-    },
-    isStatusOk() {
-      return true;
-    },
-    getId() {
-      return 'testId';
-    },
-    getUid() {
-      return 'testUid';
-    },
-    getLabel() {
-      return 'testLabel';
-    },
-    getLocation() {
-      return 'testId';
-    }
-  };
-  const frontendMinio: IMicroFrontend = {
-    metadata: {
-      name: 'testId',
-      uid: 'uid'
-    },
-    status: {
-      phase: 'ok'
-    },
-    data: {
-      data1: 'data'
-    },
-    type: 'type',
-    spec: {
-      location: 'minio'
-    },
-    isStatusOk() {
-      return true;
-    },
-    getId() {
-      return 'testId';
-    },
-    getUid() {
-      return 'testUid';
-    },
-    getLabel() {
-      return 'testLabel';
-    },
-    getLocation() {
-      return 'testId';
-    }
+  const ActivatedRouteMock = {
+    params: Observable.of({ state: 'testId' }),
+    data: Observable.of({ basePath: 'https://my.test.view/#' })
   };
 
-  const ActivatedRouteMock = {
-    params: Observable.of({ id: 'testId' })
-  };
+  const url1 = 'https://my.test.view/#testId';
 
   const ExtensionsServiceStub = {
     getExtensions() {
@@ -143,98 +82,34 @@ describe('MicrofrontendViewComponent', () => {
   });
 
   it('should create', () => {
-    spyOn(extensionsService, 'getExtensions').and.returnValue(
-      Observable.of([new MicroFrontend(frontend)])
-    );
-
     fixture.detectChanges();
     expect(component).toBeTruthy();
-    expect(extensionsService.getExtensions).toHaveBeenCalled();
   });
 
   describe('ngOnInit', () => {
     it('should set the iFrame src attribute to an url', () => {
-      spyOn(extensionsService, 'getExtensions').and.returnValue(
-        Observable.of([new MicroFrontend(frontend)])
-      );
-
       fixture.detectChanges();
       const iFrame = document.getElementById('externalViewFrame');
-      expect(iFrame.getAttribute('src')).toEqual(frontend.spec.location);
-      expect(extensionsService.getExtensions).toHaveBeenCalled();
-    });
-
-    it('should set the iFrame src attribute to an empty string if location is minio', () => {
-      spyOn(extensionsService, 'getExtensions').and.returnValue(
-        Observable.of([new MicroFrontend(frontendMinio)])
-      );
-
-      fixture.detectChanges();
-      const iFrame = document.getElementById('externalViewFrame');
-      expect(iFrame.getAttribute('src')).toEqual('');
-      expect(extensionsService.getExtensions).toHaveBeenCalled();
-    });
-
-    it('should set the iFrame src to an empty string if there are no extensions', () => {
-      spyOn(extensionsService, 'getExtensions').and.returnValue(
-        Observable.of([])
-      );
-
-      fixture.detectChanges();
-      const iFrame = document.getElementById('externalViewFrame');
-      expect(iFrame.getAttribute('src')).toEqual('');
-      expect(extensionsService.getExtensions).toHaveBeenCalled();
-    });
-
-    it('should handle an error and set the iFrame src attribute to an empty string', () => {
-      spyOn(extensionsService, 'getExtensions').and.callFake(() => {
-        return Observable.throw('error');
-      });
-
-      fixture.detectChanges();
-      const iFrame = document.getElementById('externalViewFrame');
-      expect(iFrame.getAttribute('src')).toEqual('');
-      expect(extensionsService.getExtensions).toHaveBeenCalled();
+      expect(iFrame.getAttribute('src')).toEqual(url1);
     });
   });
 
   describe('renderExternalView', () => {
     it('should register external view and send a message', () => {
-      spyOn(extensionsService, 'getExtensions').and.returnValue(
-        Observable.of([new MicroFrontend(frontend)])
-      );
-
       spyOn(extAppViewRegistryService, 'registerView').and.returnValue(
         '10-10-10'
       );
       fixture.detectChanges();
-      expect(extensionsService.getExtensions).toHaveBeenCalled();
 
       expect(extAppViewRegistryService.registerView).toHaveBeenCalled();
-    });
-
-    it('should deregister external view', () => {
-      spyOn(extensionsService, 'getExtensions').and.returnValue(
-        Observable.of([])
-      );
-
-      spyOn(extAppViewRegistryService, 'deregisterView');
-      fixture.detectChanges();
-      expect(extensionsService.getExtensions).toHaveBeenCalled();
-
-      expect(extAppViewRegistryService.deregisterView).toHaveBeenCalled();
     });
   });
 
   describe('ngOnDestroy', () => {
     it('should deregister external view', () => {
-      spyOn(extensionsService, 'getExtensions').and.returnValue(
-        Observable.of([new MicroFrontend(frontend)])
-      );
       spyOn(extAppViewRegistryService, 'deregisterView');
       fixture.detectChanges();
       component.ngOnDestroy();
-      expect(extensionsService.getExtensions).toHaveBeenCalled();
       expect(extAppViewRegistryService.deregisterView).toHaveBeenCalled();
     });
   });
