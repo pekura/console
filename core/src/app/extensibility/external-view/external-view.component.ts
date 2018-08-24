@@ -5,7 +5,6 @@ import { CurrentEnvironmentService } from '../../content/environments/services/c
 import { ExtAppViewRegistryService } from '../services/ext-app-view-registry.service';
 import { OAuthService } from 'angular-oauth2-oidc';
 import { Subscription } from 'rxjs/Subscription';
-import { AppConfig } from '../../app.config';
 
 const contextVarPrefix = 'context.';
 
@@ -16,23 +15,22 @@ const contextVarPrefix = 'context.';
   host: { class: 'sf-main sf-content-external' }
 })
 export class ExternalViewComponent implements OnInit, OnDestroy {
-  private externalViewId: string;
+  private basePath: string;
+  private externalViewState: string;
   public externalViewLocation: string;
-  private extensionsService: ExtensionsService;
   private currentEnvironmentService: CurrentEnvironmentService;
   private currentEnvironmentSubscription: Subscription;
-  private currentEnvironmentId: string;
+  protected currentEnvironmentId: string;
   private confirmationCheckTimeout: number = null;
 
   constructor(
     private router: Router,
-    private route: ActivatedRoute,
-    extensionsService: ExtensionsService,
+    protected route: ActivatedRoute,
+    protected extensionsService: ExtensionsService,
     currentEnvironmentService: CurrentEnvironmentService,
     private oauthService: OAuthService,
     private extAppViewRegistryService: ExtAppViewRegistryService
   ) {
-    this.extensionsService = extensionsService;
     this.currentEnvironmentService = currentEnvironmentService;
 
     this.currentEnvironmentSubscription = this.currentEnvironmentService
@@ -43,32 +41,14 @@ export class ExternalViewComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit() {
-    this.route.params.subscribe(params => {
-      this.externalViewId = params['id'];
-      this.extensionsService
-        .getExtensions(this.currentEnvironmentId)
-        .map(res =>
-          res.filter(ext => {
-            return ext.getId() === this.externalViewId;
-          })
-        )
-        .first()
-        .catch(error => {
-          this.externalViewLocation = '';
-          throw error;
-        })
-        .subscribe(
-          ext => {
-            this.externalViewLocation = ext[0] ? ext[0].getLocation() : '';
-            if (this.externalViewLocation === 'minio') {
-              this.externalViewLocation = '';
-            }
-            this.renderExternalView();
-          },
-          error => {
-            this.renderExternalView();
-          }
-        );
+    this.route.data.subscribe(data => {
+      this.basePath = data.basePath;
+
+      this.route.params.subscribe(params => {
+        this.externalViewState = params['state'];
+        this.externalViewLocation = this.basePath + this.externalViewState;
+        this.renderExternalView();
+      });
     });
   }
 

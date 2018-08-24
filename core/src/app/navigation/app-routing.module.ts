@@ -35,6 +35,7 @@ import { LogoutComponent } from '../content/logout/logout.component';
 import { IdpPresetsComponent } from '../content/settings/idp-presets/idp-presets.component';
 import { ResourcesComponent } from '../content/environments/configuration/resources/resources.component';
 import { LoginErrorComponent } from '../content/login-error/login-error.component';
+import { MicrofrontendViewComponent } from '../extensibility/microfrontend-view/microfrontend-view.component';
 
 const appRoutes: Routes = [
   { path: '', component: LoginComponent, pathMatch: 'full' },
@@ -89,7 +90,14 @@ const appRoutes: Routes = [
           { path: 'apis/create', component: ExposeApiComponent },
           { path: 'secrets', component: SecretsComponent },
           { path: 'secrets/:name', component: SecretDetailComponent },
-          { path: 'extensions/:id', component: ExternalViewComponent },
+          { path: 'extensions/:id', component: MicrofrontendViewComponent },
+          {
+            path: 'catalogpoc/:state',
+            component: ExternalViewComponent,
+            data: {
+              basePath: 'https://localhost/example.html#'
+            }
+          },
           { path: 'resources', component: ResourcesComponent },
           {
             path: 'permissions',

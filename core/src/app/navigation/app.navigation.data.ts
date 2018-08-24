@@ -28,6 +28,18 @@ export const navModel = {
             link: 'apis'
           },
           {
+            name: 'POC zzz',
+            link: 'catalogpoc/zzz'
+          },
+          {
+            name: 'POC xxx',
+            link: 'catalogpoc/xxx'
+          },
+          {
+            name: 'POC boom',
+            link: 'catalogpoc/boom'
+          },
+          {
             name: 'Permissions',
             link: 'permissions'
           },

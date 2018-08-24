@@ -9,7 +9,7 @@ import { OAuthService } from 'angular-oauth2-oidc';
 import { Observable } from 'rxjs/Observable';
 import 'rxjs/add/observable/throw';
 
-import { ExternalViewComponent } from './external-view.component';
+import { MicrofrontendViewComponent } from './microfrontend-view.component';
 import { ExtensionsService } from '../services/extensions.service';
 import { CurrentEnvironmentService } from '../../content/environments/services/current-environment.service';
 import { ExtAppViewRegistryService } from '../services/ext-app-view-registry.service';
@@ -19,8 +19,8 @@ import {
 } from '../../shared/datamodel/k8s/microfrontend';
 
 describe('MicrofrontendViewComponent', () => {
-  let component: ExternalViewComponent;
-  let fixture: ComponentFixture<ExternalViewComponent>;
+  let component: MicrofrontendViewComponent;
+  let fixture: ComponentFixture<MicrofrontendViewComponent>;
   let extensionsService: ExtensionsService;
   let currentEnvironmentService: CurrentEnvironmentService;
   let extAppViewRegistryService: ExtAppViewRegistryService;
@@ -117,7 +117,7 @@ describe('MicrofrontendViewComponent', () => {
   beforeEach(async(() => {
     TestBed.configureTestingModule({
       imports: [HttpClientTestingModule, RouterModule],
-      declarations: [ExternalViewComponent],
+      declarations: [MicrofrontendViewComponent],
       providers: [
         ExtensionsService,
         CurrentEnvironmentService,
@@ -131,7 +131,7 @@ describe('MicrofrontendViewComponent', () => {
   }));
 
   beforeEach(() => {
-    fixture = TestBed.createComponent(ExternalViewComponent);
+    fixture = TestBed.createComponent(MicrofrontendViewComponent);
     component = fixture.componentInstance;
     extensionsService = fixture.debugElement.injector.get(ExtensionsService);
     currentEnvironmentService = fixture.debugElement.injector.get(
