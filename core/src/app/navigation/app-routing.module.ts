@@ -66,11 +66,19 @@ const appRoutes: Routes = [
           { path: 'yVirtual', component: EnvironmentDetailsComponent },
           { path: 'details', component: EnvironmentDetailsComponent },
           { path: 'workspace', component: WorkspaceOverviewComponent },
-          { path: 'instances', component: InstancesContainerComponent },
           {
-            path: 'instances/details/:name',
-            component: InstancesContainerComponent,
-            data: { path: '/details/:name' }
+            path: 'instances',
+            component: ExternalViewComponent,
+            data: {
+              basePath: 'http://localhost:8001',
+            },
+          },
+          {
+            path: 'instances/details/:state',
+            component: ExternalViewComponent,
+            data: {
+              basePath: 'http://localhost:8001/details',
+            },
           },
           { path: 'lambdas', component: LambdasComponent },
           { path: 'lambdas/create', component: LambdasComponent },
@@ -91,13 +99,6 @@ const appRoutes: Routes = [
           { path: 'secrets', component: SecretsComponent },
           { path: 'secrets/:name', component: SecretDetailComponent },
           { path: 'extensions/:id', component: MicrofrontendViewComponent },
-          {
-            path: 'catalogpoc/:state',
-            component: ExternalViewComponent,
-            data: {
-              basePath: 'https://localhost/example.html#'
-            }
-          },
           { path: 'resources', component: ResourcesComponent },
           {
             path: 'permissions',
@@ -116,13 +117,21 @@ const appRoutes: Routes = [
           },
           {
             path: 'service-catalog',
-            component: CatalogContainerComponent,
-            data: { leftNavCollapsed: true }
+            component: ExternalViewComponent,
+            data: {
+              basePath: 'http://localhost:8000',
+              leftNavCollapsed: true,
+              executionAsync: false,
+            },
           },
           {
-            path: 'service-catalog/details/:name',
-            component: CatalogContainerComponent,
-            data: { path: '/details/:name', leftNavCollapsed: true }
+            path: 'service-catalog/details/:state',
+            component: ExternalViewComponent,
+            data: {
+              basePath: 'http://localhost:8000/details',
+              leftNavCollapsed: true,
+              executionAsync: false,
+            },
           },
           { path: '', redirectTo: 'details', pathMatch: 'full' },
           { path: '**', redirectTo: 'details', pathMatch: 'full' }
@@ -130,24 +139,18 @@ const appRoutes: Routes = [
       },
       {
         path: 'docs',
-        component: CustomExternalAppComponent,
-        data: {
-          leftNavCollapsed: true,
-          externalUrl: AppConfig.docsModuleUrl,
-          mountingPath: '/home/',
-          executionAsync: false
-        }
+        redirectTo: 'docs/root/kyma',
+        pathMatch: 'full',
       },
       {
         path: 'docs/:type/:id',
-        component: CustomExternalAppComponent,
+        component: ExternalViewComponent,
         data: {
-          path: '/:type/:id',
-          externalUrl: AppConfig.docsModuleUrl,
+          basePath: 'http://localhost:8002',
           leftNavCollapsed: true,
+          executionAsync: false,
           mountingPath: '/home/',
-          executionAsync: false
-        }
+        },
       },
       {
         path: 'settings',

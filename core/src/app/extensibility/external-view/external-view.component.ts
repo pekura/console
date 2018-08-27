@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Location } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ExtensionsService } from '../services/extensions.service';
 import { CurrentEnvironmentService } from '../../content/environments/services/current-environment.service';
@@ -12,12 +13,13 @@ const contextVarPrefix = 'context.';
   selector: 'app-external-view',
   templateUrl: './external-view.component.html',
   styleUrls: ['./external-view.component.scss'],
-  host: { class: 'sf-main sf-content-external' }
+  host: { class: 'sf-main sf-content-external' },
 })
 export class ExternalViewComponent implements OnInit, OnDestroy {
   private basePath: string;
   private externalViewState: string;
   public externalViewLocation: string;
+  public externalViewFragment: string;
   private currentEnvironmentService: CurrentEnvironmentService;
   private currentEnvironmentSubscription: Subscription;
   protected currentEnvironmentId: string;
@@ -25,6 +27,7 @@ export class ExternalViewComponent implements OnInit, OnDestroy {
 
   constructor(
     private router: Router,
+    private location: Location,
     protected route: ActivatedRoute,
     protected extensionsService: ExtensionsService,
     currentEnvironmentService: CurrentEnvironmentService,
@@ -45,11 +48,34 @@ export class ExternalViewComponent implements OnInit, OnDestroy {
       this.basePath = data.basePath;
 
       this.route.params.subscribe(params => {
-        this.externalViewState = params['state'];
-        this.externalViewLocation = this.basePath + this.externalViewState;
+        this.externalViewState = '';
+        for(const param in params) {
+          this.externalViewState ? this.externalViewState = `${this.externalViewState}/${params[param]}` : this.externalViewState = params[param]
+        }
+
+        const fragment = this.router.url.split('#')[1]
+        if (fragment) {
+          this.externalViewFragment = fragment;
+        }
+
+        this.externalViewLocation = this.basePath[this.basePath.length - 1] === '/' ? `${this.basePath}${this.externalViewState}` : `${this.basePath}/${this.externalViewState}`;
+        this.externalViewLocation = this.externalViewFragment ? `${this.externalViewLocation}#${this.externalViewFragment}` : this.externalViewLocation;
         this.renderExternalView();
-      });
+      })
+
+      this.route.fragment.subscribe(fragment => {
+        this.externalViewFragment = fragment;
+        this.renderExternalView();        
+      })
     });
+  }
+
+  getOrigin(url: string): string {
+    const a = document.createElement('a'); 
+    a.setAttribute('href', url);
+    const { protocol, hostname, port } = a;
+
+    return `${protocol}//${hostname}${port.length ? `:${port}` : ''}`;
   }
 
   escapeRegExp(string) {
@@ -94,8 +120,8 @@ export class ExternalViewComponent implements OnInit, OnDestroy {
 
   isNotSameDomain(viewUrl, iframe) {
     if (iframe) {
-      const previousUrl = this.getUrlWithoutHash(iframe.src);
-      const nextUrl = this.getUrlWithoutHash(viewUrl);
+      const previousUrl = this.getOrigin(iframe.src);
+      const nextUrl = this.getOrigin(viewUrl);
       return previousUrl !== nextUrl;
     }
     return true;
@@ -107,7 +133,8 @@ export class ExternalViewComponent implements OnInit, OnDestroy {
     ) as HTMLIFrameElement;
 
     if (
-      !this.extensionsService.isUsingSecureProtocol(this.externalViewLocation)
+      !this.extensionsService.isUsingSecureProtocol(this.externalViewLocation) &&
+      !this.extensionsService.isLocalDevelopment(this.externalViewLocation)
     ) {
       return;
     }
@@ -122,7 +149,7 @@ export class ExternalViewComponent implements OnInit, OnDestroy {
       idToken: this.oauthService.getIdToken()
     };
 
-    const viewUrl = this.replaceVars(
+    let viewUrl = this.replaceVars(
       this.externalViewLocation,
       context,
       contextVarPrefix

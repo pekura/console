@@ -1,6 +1,6 @@
 export function getApiURL(endpoint) {
   let config = {
-    graphqlApiUrl: "http://localhost:3000/graphql"
+    graphqlApiUrl: 'https://ui-api.kyma.local/graphql' //"http://localhost:3000/graphql"
   };
   const clusterConfig = window["clusterConfig"];
   config = { ...config, ...clusterConfig };

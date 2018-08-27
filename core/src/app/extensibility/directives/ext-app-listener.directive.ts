@@ -1,4 +1,5 @@
 import { Directive } from '@angular/core';
+import { Location } from '@angular/common';
 import { Router } from '@angular/router';
 import { ExtAppViewRegistryService } from '../services/ext-app-view-registry.service';
 import { CurrentEnvironmentService } from '../../content/environments/services/current-environment.service';
@@ -15,6 +16,7 @@ export class ExtAppListenerDirective {
 
   constructor(
     private router: Router,
+    private location: Location,
     private extAppViewRegistryService: ExtAppViewRegistryService,
     private oauthService: OAuthService,
     currentEnvironmentService: CurrentEnvironmentService
@@ -130,9 +132,15 @@ export class ExtAppListenerDirective {
       }
 
       if (path) {
-        this.router.navigate([sanitizeLinkManagerLink(path)]).catch(e => {
-          console.log('Route not found');
-        });
+        if (!data.params.fragment) {
+          this.router.navigate([sanitizeLinkManagerLink(path)]).catch(e => {
+            console.log('Route not found');
+          });
+        } else {
+          this.router.navigate([sanitizeLinkManagerLink(path)], { fragment: data.params.fragment }).catch(e => {
+            console.log('Route not found');
+          });
+        }
       }
     } else {
       console.log('missing "data.params.link" in the incoming message');

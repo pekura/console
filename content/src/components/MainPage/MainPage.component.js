@@ -6,6 +6,7 @@ import ContentWrapper from '../ContentWrapper/ContentWrapper.container';
 import NavigationList from '../Navigation/NavigationList.component';
 import { parseYaml } from '../../commons/yaml.js';
 import { goToAnchor, goToTop } from 'react-scrollable-anchor';
+import * as linkManager from '../../commons/linkManager'
 
 const LeftSideWrapper = styled.div`
   box-sizing: border-box;
@@ -69,11 +70,14 @@ class MainPage extends Component {
     });
     let link = `/${activeLink.type}/${activeLink.id}`;
     if (activeLink.hash) {
-      link = `${link}#${activeLink.hash}`;
-      this.props.history.push(link);
+      this.props.history.push(`${link}#${activeLink.hash}`);
+      linkManager.navigate(`/home/docs${link}`, {
+        fragment: activeLink.hash
+      })
       goToAnchor(activeLink.hash);
     } else {
       this.props.history.push(link);
+      linkManager.navigate(`/home/docs${link}`)
       goToTop();
     }
   }

@@ -1,4 +1,5 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Location } from '@angular/common';
 import { Router, ActivatedRoute } from '@angular/router';
 import { ExtensionsService } from '../services/extensions.service';
 import { CurrentEnvironmentService } from '../../content/environments/services/current-environment.service';
@@ -18,6 +19,7 @@ export class MicrofrontendViewComponent extends ExternalViewComponent
 
   constructor(
     router: Router,
+    location: Location,
     route: ActivatedRoute,
     extensionsService: ExtensionsService,
     currentEnvironmentService: CurrentEnvironmentService,
@@ -26,6 +28,7 @@ export class MicrofrontendViewComponent extends ExternalViewComponent
   ) {
     super(
       router,
+      location,
       route,
       extensionsService,
       currentEnvironmentService,
