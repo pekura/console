@@ -2,7 +2,7 @@ import { Component, OnInit, Inject, Input } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { EnvironmentInfo } from '../content/environments/environment-info';
 import { EnvironmentsService } from '../content/environments/services/environments.service';
-import { Router, ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute, UrlTree } from '@angular/router';
 import { ExtensionsService } from '../extensibility/services/extensions.service';
 import { navModel } from './app.navigation.data';
 import { CurrentEnvironmentService } from '../content/environments/services/current-environment.service';
@@ -56,11 +56,20 @@ export class NavigationComponent implements OnInit {
       });
   }
 
+  private getUrlTree(link: string): UrlTree {
+    if (link.startsWith('/')) {
+      return this.router.createUrlTree([link]);
+    } else {
+      const r = this.route;
+      return this.currentEnvironmentId
+        ? this.router.createUrlTree([link], { relativeTo: r })
+        : this.router.createUrlTree([`home/settings/${link}`]);
+    }
+  }
+
   changeRoute(link: string) {
     const r = this.route;
-    const urlTree = this.currentEnvironmentId
-      ? this.router.createUrlTree([link], { relativeTo: r })
-      : this.router.createUrlTree([`home/settings/${link}`]);
+    const urlTree = this.getUrlTree(link);
     if (this.router.isActive(urlTree, true)) {
       // do refresh
       this.router
@@ -96,26 +105,39 @@ export class NavigationComponent implements OnInit {
     );
   }
 
-  manageExternalViews(extensions) {
+  manageExternalViews(extensions, basePath, navigationContext) {
     const extViews = new Map();
     extensions.forEach(extension => {
       let category = 'External Views';
-      if (extension.spec.navigation && extension.spec.navigation.category) {
-        category = extension.spec.navigation.category;
+      if (
+        !navigationContext ||
+        (extension.spec.placement &&
+          extension.spec.placement.split(',').includes(navigationContext))
+      ) {
+        if (extension.spec.navigationNodes) {
+          extension.spec.navigationNodes.forEach(node => {
+            const path = node.navigationPath.split('/');
+            if (path.length === 1) {
+              if (extension.spec.category) {
+                category = extension.spec.category;
+              }
+              let extensionsCategories = extViews.get(category);
+              if (!extensionsCategories) {
+                extensionsCategories = [];
+                extViews.set(category, extensionsCategories);
+              }
+              extensionsCategories.push(node);
+            }
+          });
+        }
       }
-      let extensionsCategories = extViews.get(category);
-      if (!extensionsCategories) {
-        extensionsCategories = [];
-        extViews.set(category, extensionsCategories);
-      }
-      extensionsCategories.push(extension);
     });
 
-    extViews.forEach((views, category) => {
-      views.forEach(view => {
+    extViews.forEach((nodes, category) => {
+      nodes.forEach(node => {
         this.addEntryToNavigationGroup(category, {
-          name: view.getLabel(),
-          link: 'extensions/' + view.getId()
+          name: node.label,
+          link: basePath + node.navigationPath.split('/')[0]
         });
       });
     });
@@ -125,7 +147,7 @@ export class NavigationComponent implements OnInit {
     this.extensionsService
       .getExtensions(this.currentEnvironmentId)
       .subscribe(extensions => {
-        this.manageExternalViews(extensions);
+        this.manageExternalViews(extensions, 'extensions/', null);
       });
   }
 
@@ -133,7 +155,18 @@ export class NavigationComponent implements OnInit {
     this.extensionsService
       .getClusterExtensions()
       .subscribe(clusterExtensions => {
-        this.manageExternalViews(clusterExtensions);
+        this.manageExternalViews(
+          clusterExtensions,
+          '/home/extensions/',
+          'cluster'
+        );
+        if (this.currentEnvironmentId) {
+          this.manageExternalViews(
+            clusterExtensions,
+            'extensions/',
+            'environment'
+          );
+        }
       });
   }
 

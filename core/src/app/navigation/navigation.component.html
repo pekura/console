@@ -38,7 +38,7 @@
           <a routerLink="{{group.link}}" (click)="changeRoute(group.link)" routerLinkActive="is-active" class="sf-toolbar__item">{{ group.name }}</a>
         </div>
       </ng-container>
-      <ng-container *ngIf="!group.link">
+      <ng-container *ngIf="!group.link && group.entries">
         <div class="sf-toolbar__item">
           <div class="sf-toolbar__header">{{ group.name }}</div>
           <div class="sf-toolbar__group">

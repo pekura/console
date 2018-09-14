@@ -742,7 +742,9 @@ export class LambdaDetailsComponent implements AfterViewInit {
       const eventData = luigiClient.getEventData();
       sessionId = eventData.sessionId;
     });
-    luigiClient.linkManager().openInCurrentEnvironment(`lambdas`, sessionId);
+    luigiClient
+      .linkManager()
+      .openInCurrentEnvironment(`extensions/lambdas`, sessionId);
   }
 
   getEventActivations(): void {
