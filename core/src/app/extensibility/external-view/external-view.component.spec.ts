@@ -104,7 +104,7 @@ describe('ExternalViewComponent', () => {
     getExtensions() {
       return of([]);
     },
-    getClusterExtensions() {
+    getExternalExtensions() {
       return of([]);
     },
     isUsingSecureProtocol() {
@@ -141,12 +141,12 @@ describe('ExternalViewComponent', () => {
     spyOn(extensionsService, 'getExtensions').and.returnValue(
       of([new MicroFrontend(frontend)])
     );
-    spyOn(extensionsService, 'getClusterExtensions').and.returnValue(of([]));
+    spyOn(extensionsService, 'getExternalExtensions').and.returnValue(of([]));
 
     fixture.detectChanges();
     expect(component).toBeTruthy();
     expect(extensionsService.getExtensions).toHaveBeenCalled();
-    expect(extensionsService.getClusterExtensions).not.toHaveBeenCalled();
+    expect(extensionsService.getExternalExtensions).not.toHaveBeenCalled();
   });
 
   describe('ngOnInit', () => {
@@ -154,18 +154,18 @@ describe('ExternalViewComponent', () => {
       spyOn(extensionsService, 'getExtensions').and.returnValue(
         of([new MicroFrontend(frontend)])
       );
-      spyOn(extensionsService, 'getClusterExtensions').and.returnValue(of([]));
+      spyOn(extensionsService, 'getExternalExtensions').and.returnValue(of([]));
 
       fixture.detectChanges();
       const iFrame = document.getElementById('externalViewFrame');
       expect(iFrame.getAttribute('src')).toEqual(frontend.spec.location);
       expect(extensionsService.getExtensions).toHaveBeenCalled();
-      expect(extensionsService.getClusterExtensions).not.toHaveBeenCalled();
+      expect(extensionsService.getExternalExtensions).not.toHaveBeenCalled();
     });
 
     it('should set the iFrame src attribute to an url if there is a cluster extension', () => {
       spyOn(extensionsService, 'getExtensions').and.returnValue(of([]));
-      spyOn(extensionsService, 'getClusterExtensions').and.returnValue(
+      spyOn(extensionsService, 'getExternalExtensions').and.returnValue(
         of([new MicroFrontend(frontend)])
       );
 
@@ -173,44 +173,44 @@ describe('ExternalViewComponent', () => {
       const iFrame = document.getElementById('externalViewFrame');
       expect(iFrame.getAttribute('src')).toEqual(frontend.spec.location);
       expect(extensionsService.getExtensions).toHaveBeenCalled();
-      expect(extensionsService.getClusterExtensions).toHaveBeenCalled();
+      expect(extensionsService.getExternalExtensions).toHaveBeenCalled();
     });
 
     it('should set the iFrame src attribute to an empty string if location is minio', () => {
       spyOn(extensionsService, 'getExtensions').and.returnValue(
         of([new MicroFrontend(frontendMinio)])
       );
-      spyOn(extensionsService, 'getClusterExtensions').and.returnValue(of([]));
+      spyOn(extensionsService, 'getExternalExtensions').and.returnValue(of([]));
 
       fixture.detectChanges();
       const iFrame = document.getElementById('externalViewFrame');
       expect(iFrame.getAttribute('src')).toEqual('');
       expect(extensionsService.getExtensions).toHaveBeenCalled();
-      expect(extensionsService.getClusterExtensions).not.toHaveBeenCalled();
+      expect(extensionsService.getExternalExtensions).not.toHaveBeenCalled();
     });
 
     it('should set the iFrame src to an empty string if there are no extensions', () => {
       spyOn(extensionsService, 'getExtensions').and.returnValue(of([]));
-      spyOn(extensionsService, 'getClusterExtensions').and.returnValue(of([]));
+      spyOn(extensionsService, 'getExternalExtensions').and.returnValue(of([]));
 
       fixture.detectChanges();
       const iFrame = document.getElementById('externalViewFrame');
       expect(iFrame.getAttribute('src')).toEqual('');
       expect(extensionsService.getExtensions).toHaveBeenCalled();
-      expect(extensionsService.getClusterExtensions).toHaveBeenCalled();
+      expect(extensionsService.getExternalExtensions).toHaveBeenCalled();
     });
 
     it('should handle an error and set the iFrame src attribute to an empty string', () => {
       spyOn(extensionsService, 'getExtensions').and.callFake(() => {
         return throwError('error');
       });
-      spyOn(extensionsService, 'getClusterExtensions').and.returnValue(of([]));
+      spyOn(extensionsService, 'getExternalExtensions').and.returnValue(of([]));
 
       fixture.detectChanges();
       const iFrame = document.getElementById('externalViewFrame');
       expect(iFrame.getAttribute('src')).toEqual('');
       expect(extensionsService.getExtensions).toHaveBeenCalled();
-      expect(extensionsService.getClusterExtensions).not.toHaveBeenCalled();
+      expect(extensionsService.getExternalExtensions).not.toHaveBeenCalled();
     });
   });
 
@@ -219,26 +219,26 @@ describe('ExternalViewComponent', () => {
       spyOn(extensionsService, 'getExtensions').and.returnValue(
         of([new MicroFrontend(frontend)])
       );
-      spyOn(extensionsService, 'getClusterExtensions').and.returnValue(of([]));
+      spyOn(extensionsService, 'getExternalExtensions').and.returnValue(of([]));
       spyOn(extAppViewRegistryService, 'registerView').and.returnValue(
         '10-10-10'
       );
 
       fixture.detectChanges();
       expect(extensionsService.getExtensions).toHaveBeenCalled();
-      expect(extensionsService.getClusterExtensions).not.toHaveBeenCalled();
+      expect(extensionsService.getExternalExtensions).not.toHaveBeenCalled();
 
       expect(extAppViewRegistryService.registerView).toHaveBeenCalled();
     });
 
     it('should deregister external view', () => {
       spyOn(extensionsService, 'getExtensions').and.returnValue(of([]));
-      spyOn(extensionsService, 'getClusterExtensions').and.returnValue(of([]));
+      spyOn(extensionsService, 'getExternalExtensions').and.returnValue(of([]));
       spyOn(extAppViewRegistryService, 'deregisterView');
 
       fixture.detectChanges();
       expect(extensionsService.getExtensions).toHaveBeenCalled();
-      expect(extensionsService.getClusterExtensions).toHaveBeenCalled();
+      expect(extensionsService.getExternalExtensions).toHaveBeenCalled();
       expect(extAppViewRegistryService.deregisterView).toHaveBeenCalled();
     });
   });
@@ -248,13 +248,13 @@ describe('ExternalViewComponent', () => {
       spyOn(extensionsService, 'getExtensions').and.returnValue(
         of([new MicroFrontend(frontend)])
       );
-      spyOn(extensionsService, 'getClusterExtensions').and.returnValue(of([]));
+      spyOn(extensionsService, 'getExternalExtensions').and.returnValue(of([]));
       spyOn(extAppViewRegistryService, 'deregisterView');
 
       fixture.detectChanges();
       component.ngOnDestroy();
       expect(extensionsService.getExtensions).toHaveBeenCalled();
-      expect(extensionsService.getClusterExtensions).not.toHaveBeenCalled();
+      expect(extensionsService.getExternalExtensions).not.toHaveBeenCalled();
       expect(extAppViewRegistryService.deregisterView).toHaveBeenCalled();
     });
   });

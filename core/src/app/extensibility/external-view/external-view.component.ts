@@ -97,7 +97,7 @@ export class ExternalViewComponent implements OnInit, OnDestroy {
                 this.renderExternalView();
               } else {
                 this.extensionsService
-                  .getClusterExtensions()
+                  .getExternalExtensions()
                   .pipe(
                     map(res =>
                       this.getMatchingViewsForPathAndContext(

@@ -26,7 +26,7 @@ export class ExtensionsService {
     );
   }
 
-  getClusterExtensions(): Observable<MicroFrontend[]> {
+  getExternalExtensions(): Observable<MicroFrontend[]> {
     const resourceUrl = `${AppConfig.k8sApiServerUrl_ui}clustermicrofrontends`;
     return this.http.get<List<IMicroFrontend>>(resourceUrl).pipe(
       map(res => {

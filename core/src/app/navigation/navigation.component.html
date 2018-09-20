@@ -1,13 +1,13 @@
 <div *ngIf="currentNavModel" class="sf-toolbar sf-toolbar--vertical sf-toolbar--mainnavigation">
-  <a *ngIf='!currentNavModel.showEnvChooser' class="sf-toolbar__item" routerLink="/home/environments" (click)="goToEnvironments()"
+  <a *ngIf='!currentNavModel?.showEnvChooser' class="sf-toolbar__item" routerLink="/home/environments" (click)="goToEnvironments()"
     routerLinkActive="is-active">
-    ← Back to Environment
+    ← Back to {{(navCtx === 'cluster') ? 'Workspace' : 'Environment'}}
   </a>
-  <span *ngIf='!currentNavModel.showEnvChooser' class="sf-toolbar__item sf-toolbar__item--seperator"></span>
+  <span *ngIf='!currentNavModel?.showEnvChooser' class="sf-toolbar__item sf-toolbar__item--seperator"></span>
   <a *ngIf='currentNavModel.topEntry' (click)="changeRoute(currentNavModel.topEntry.link)" routerLink="{{currentNavModel.topEntry.link}}"
     routerLinkActive="is-active" class="sf-toolbar__item">{{ currentNavModel.topEntry.name }}</a>
   <span *ngIf='currentNavModel.topEntry' class="sf-toolbar__item sf-toolbar__item--seperator"></span>
-  <div class="sf-toolbar__item" *ngIf='currentNavModel.showEnvChooser'>
+  <div class="sf-toolbar__item" *ngIf='currentNavModel?.showEnvChooser'>
     <div class="tn-dropdown sf-dropdown" (clickOutside)="closeDropDown()"  clickOutsideEvents="click,mousedown" excludeBeforeClick="true">
       <button class="tn-dropdown__control" 
         aria-controls="nNJnB279" 
@@ -31,7 +31,8 @@
       </ul>
     </div>
   </div>
-  <div *ngIf="currentEnvironmentId || !currentNavModel.showEnvChooser">
+
+  <div *ngIf="currentEnvironmentId || !currentNavModel?.showEnvChooser">
     <ng-container *ngFor="let group of currentNavModel.groups">
       <ng-container *ngIf="group.link">
         <div class="sf-toolbar__group">
@@ -54,7 +55,7 @@
       </ng-container>
     </ng-container>
   </div>
-  <div *ngIf="!currentEnvironmentId && currentNavModel.showEnvChooser">
+  <div *ngIf="!currentEnvironmentId && currentNavModel?.showEnvChooser">
     <ng-container *ngFor="let group of externalViewsGroups">
       <ng-container *ngIf="group.link">
         <div class="sf-toolbar__group">
@@ -79,9 +80,9 @@
   </div>
   <div class="sf-toolbar__footer">
     <span class="sf-toolbar__item sf-toolbar__item--seperator"></span>
-    <a *ngIf='currentNavModel.showEnvChooser' class="sf-toolbar__item" routerLink="/home/settings" routerLinkActive="is-active">
+    <a *ngIf="currentNavModel?.showEnvChooser || navCtx === 'cluster'" class="sf-toolbar__item" routerLink="/home/settings" routerLinkActive="is-active">
       <!--  <svg class="sf-icon sf-icon--settings" aria-labelledby="icon-title-settings"
-         viewbox="0 0 16 16" width="16" height="16">
+        viewbox="0 0 16 16" width="16" height="16">
       <use xlink:href="assets/sprite.svg#settings"></use>
     </svg> -->
       Administration

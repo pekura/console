@@ -1,13 +1,13 @@
 import { Component, OnInit, Inject, Input } from '@angular/core';
+import { Router, ActivatedRoute, UrlTree } from '@angular/router';
 import { Subscription } from 'rxjs';
+import { cloneDeep } from 'lodash';
+
 import { EnvironmentInfo } from '../content/environments/environment-info';
 import { EnvironmentsService } from '../content/environments/services/environments.service';
-import { Router, ActivatedRoute, UrlTree } from '@angular/router';
 import { ExtensionsService } from '../extensibility/services/extensions.service';
-import { navModel } from './app.navigation.data';
+import { navModel, INavTypes } from './app.navigation.data';
 import { CurrentEnvironmentService } from '../content/environments/services/current-environment.service';
-
-import * as _ from 'lodash';
 
 @Component({
   selector: 'app-navigation',
@@ -16,7 +16,7 @@ import * as _ from 'lodash';
   host: { class: 'sf-navigation' }
 })
 export class NavigationComponent implements OnInit {
-  @Input() navCtx: string;
+  @Input() navCtx: INavTypes;
   environment: EnvironmentInfo;
   environmentsService: EnvironmentsService;
   extensionsService: ExtensionsService;
@@ -24,7 +24,7 @@ export class NavigationComponent implements OnInit {
   ariaExpanded = false;
   ariaHidden = true;
   currentEnvironmentId = null;
-  currentNavModel = navModel.env;
+  currentNavModel: any;
   private currentEnvironmentSubscription: Subscription;
   private lastEnvironmentId: string;
   isActive: boolean;
@@ -88,11 +88,14 @@ export class NavigationComponent implements OnInit {
   ngOnInit() {
     this.currentNavModel = navModel[this.navCtx];
     this.route.params.subscribe(params => {
-      this.currentNavModel = _.cloneDeep(navModel[this.navCtx]);
+      this.currentNavModel = cloneDeep(navModel[this.navCtx]);
       this.currentEnvironmentId = params['environmentId'];
       this.getExtensions();
-      if (this.currentNavModel.showEnvChooser) {
-        this.getClusterExtensions();
+      if (
+        this.currentNavModel &&
+        (this.currentNavModel.showEnvChooser || this.navCtx === 'cluster')
+      ) {
+        this.getExternalExtensions();
       }
     });
 
@@ -135,10 +138,14 @@ export class NavigationComponent implements OnInit {
 
     extViews.forEach((nodes, category) => {
       nodes.forEach(node => {
-        this.addEntryToNavigationGroup(category, {
-          name: node.label,
-          link: basePath + node.navigationPath.split('/')[0]
-        });
+        this.addEntryToNavigationGroup(
+          category,
+          {
+            name: node.label,
+            link: basePath + node.navigationPath.split('/')[0]
+          },
+          navigationContext
+        );
       });
     });
   }
@@ -151,9 +158,9 @@ export class NavigationComponent implements OnInit {
       });
   }
 
-  getClusterExtensions() {
+  getExternalExtensions() {
     this.extensionsService
-      .getClusterExtensions()
+      .getExternalExtensions()
       .subscribe(clusterExtensions => {
         this.manageExternalViews(
           clusterExtensions,
@@ -170,7 +177,7 @@ export class NavigationComponent implements OnInit {
       });
   }
 
-  getNavigationGroup(groupName) {
+  getNavigationGroup(groupName, navType: INavTypes) {
     let result = null;
     if (this.currentNavModel.groups) {
       this.currentNavModel.groups.forEach(group => {
@@ -196,11 +203,15 @@ export class NavigationComponent implements OnInit {
   }
 
   hasNavigationGroup(groupName) {
-    return this.getNavigationGroup(groupName) !== null;
+    return this.getNavigationGroup(groupName, this.navCtx) !== null;
   }
 
-  addEntryToNavigationGroup(groupName, entry) {
-    let group = this.getNavigationGroup(groupName);
+  addEntryToNavigationGroup(
+    groupName,
+    entry,
+    navType: INavTypes = 'environment'
+  ) {
+    let group = this.getNavigationGroup(groupName, navType);
     if (!group) {
       group = {
         name: groupName,
