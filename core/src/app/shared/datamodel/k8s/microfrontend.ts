@@ -41,7 +41,7 @@ export class MicroFrontend extends MetaDataOwner implements IMicroFrontend {
   }
 
   public getLabel() {
-    return this.spec.displayName;
+    return this.spec.displayName || this.metadata.name;
   }
 
   public getLocation() {
