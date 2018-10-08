@@ -20,15 +20,20 @@ export const navModel = {
       },
       {
         name: 'Service Catalog',
-        link: 'service-catalog'
+        entries: [
+          {
+            name: 'Catalog',
+            link: 'service-catalog'
+          },
+          {
+            name: 'Instances',
+            link: 'instances'
+          }
+        ]
       },
       {
         name: 'Configuration',
         entries: [
-          {
-            name: 'Service Instances',
-            link: 'instances'
-          },
           {
             name: 'APIs',
             link: 'apis'
