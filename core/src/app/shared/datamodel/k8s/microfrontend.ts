@@ -70,7 +70,9 @@ export class MicroFrontend extends MetaDataOwner implements IMicroFrontend {
           });
           if (match) {
             result = { ...node };
-            result.computedViewUrl = this.spec.viewBaseUrl + node.viewUrl;
+            result.computedViewUrl = this.spec.viewBaseUrl
+              ? this.spec.viewBaseUrl + node.viewUrl
+              : node.viewUrl;
             Object.entries(params).forEach(entry => {
               result.computedViewUrl = result.computedViewUrl.replace(
                 ':' + entry[0],

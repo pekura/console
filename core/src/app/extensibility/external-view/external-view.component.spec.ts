@@ -45,39 +45,13 @@ describe('ExternalViewComponent', () => {
     },
     type: 'type',
     spec: {
-      location:
-        'https://pl.wikipedia.org/wiki/Wikipedia:Strona_g%C5%82%C3%B3wna'
-    },
-    isStatusOk() {
-      return true;
-    },
-    getId() {
-      return 'testId';
-    },
-    getUid() {
-      return 'testUid';
-    },
-    getLabel() {
-      return 'testLabel';
-    },
-    getLocation() {
-      return 'testId';
-    }
-  };
-  const frontendMinio: IMicroFrontend = {
-    metadata: {
-      name: 'testId',
-      uid: 'uid'
-    },
-    status: {
-      phase: 'ok'
-    },
-    data: {
-      data1: 'data'
-    },
-    type: 'type',
-    spec: {
-      location: 'minio'
+      navigationNodes: [
+        {
+          navigationPath: 'tets',
+          viewUrl:
+            'https://pl.wikipedia.org/wiki/Wikipedia:Strona_g%C5%82%C3%B3wna'
+        }
+      ]
     },
     isStatusOk() {
       return true;
@@ -97,7 +71,8 @@ describe('ExternalViewComponent', () => {
   };
 
   const ActivatedRouteMock = {
-    params: of({ id: 'testId' })
+    params: of({ id: 'testId', pathSegment1: 'tets' }),
+    data: of({ placement: 'environment' })
   };
 
   const ExtensionsServiceStub = {
@@ -158,7 +133,9 @@ describe('ExternalViewComponent', () => {
 
       fixture.detectChanges();
       const iFrame = document.getElementById('externalViewFrame');
-      expect(iFrame.getAttribute('src')).toEqual(frontend.spec.location);
+      expect(iFrame.getAttribute('src')).toEqual(
+        frontend.spec.navigationNodes[0].viewUrl
+      );
       expect(extensionsService.getExtensions).toHaveBeenCalled();
       expect(extensionsService.getExternalExtensions).not.toHaveBeenCalled();
     });
@@ -171,22 +148,11 @@ describe('ExternalViewComponent', () => {
 
       fixture.detectChanges();
       const iFrame = document.getElementById('externalViewFrame');
-      expect(iFrame.getAttribute('src')).toEqual(frontend.spec.location);
+      expect(iFrame.getAttribute('src')).toEqual(
+        frontend.spec.navigationNodes[0].viewUrl
+      );
       expect(extensionsService.getExtensions).toHaveBeenCalled();
       expect(extensionsService.getExternalExtensions).toHaveBeenCalled();
-    });
-
-    it('should set the iFrame src attribute to an empty string if location is minio', () => {
-      spyOn(extensionsService, 'getExtensions').and.returnValue(
-        of([new MicroFrontend(frontendMinio)])
-      );
-      spyOn(extensionsService, 'getExternalExtensions').and.returnValue(of([]));
-
-      fixture.detectChanges();
-      const iFrame = document.getElementById('externalViewFrame');
-      expect(iFrame.getAttribute('src')).toEqual('');
-      expect(extensionsService.getExtensions).toHaveBeenCalled();
-      expect(extensionsService.getExternalExtensions).not.toHaveBeenCalled();
     });
 
     it('should set the iFrame src to an empty string if there are no extensions', () => {

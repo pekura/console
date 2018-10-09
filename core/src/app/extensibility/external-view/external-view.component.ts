@@ -114,10 +114,10 @@ export class ExternalViewComponent implements OnInit, OnDestroy {
                   )
                   .subscribe(
                     clusterExtensions => {
-                      if (clusterExtensions.length > 0) {
-                        this.externalViewLocation =
-                          clusterExtensions[0].navigationNode.computedViewUrl;
-                      }
+                      this.externalViewLocation =
+                        clusterExtensions.length > 0
+                          ? clusterExtensions[0].navigationNode.computedViewUrl
+                          : '';
                       this.renderExternalView();
                     },
                     error => {
