@@ -1,7 +1,7 @@
 <div *ngIf="currentNavModel" class="sf-toolbar sf-toolbar--vertical sf-toolbar--mainnavigation">
   <a *ngIf='!currentNavModel?.showEnvChooser' class="sf-toolbar__item" routerLink="/home/environments" (click)="goToEnvironments()"
     routerLinkActive="is-active">
-    ← Back to {{(navCtx === 'cluster') ? 'Workspace' : 'Environment'}}
+    ← Back to {{ (navCtx === 'cluster') ? 'Workspace' : 'Environment' }}
   </a>
   <span *ngIf='!currentNavModel?.showEnvChooser' class="sf-toolbar__item sf-toolbar__item--seperator"></span>
   <a *ngIf='currentNavModel.topEntry' (click)="changeRoute(currentNavModel.topEntry.link)" routerLink="{{currentNavModel.topEntry.link}}"
@@ -9,13 +9,13 @@
   <span *ngIf='currentNavModel.topEntry' class="sf-toolbar__item sf-toolbar__item--seperator"></span>
   <div class="sf-toolbar__item" *ngIf='currentNavModel?.showEnvChooser'>
     <div class="tn-dropdown sf-dropdown" (clickOutside)="closeDropDown()"  clickOutsideEvents="click,mousedown" excludeBeforeClick="true">
-      <button class="tn-dropdown__control" 
-        aria-controls="nNJnB279" 
-        [attr.aria-expanded]="ariaExpanded" 
+      <button class="tn-dropdown__control"
+        aria-controls="nNJnB279"
+        [attr.aria-expanded]="ariaExpanded"
         aria-haspopup="true"
         (click)="toggleDropDown()">
         <input class="filter-input"
-          type="text" 
+          type="text"
           name="environmentName"
           placeholder="Choose environment"
           [(ngModel)]="environmentName"
