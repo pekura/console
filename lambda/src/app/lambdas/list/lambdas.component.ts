@@ -224,6 +224,6 @@ export class LambdasComponent extends GenericTableComponent {
   goToCreate() {
     luigiClient
       .linkManager()
-      .openInCurrentEnvironment(`extensions/lambdas/create`, this.sessionId);
+      .openInCurrentEnvironment(`lambdas/create`, this.sessionId);
   }
 }
