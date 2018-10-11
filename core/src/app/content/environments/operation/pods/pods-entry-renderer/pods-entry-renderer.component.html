@@ -1,5 +1,12 @@
 <div class="row sf-list__body" [ngClass]="{'sf-list__disabled': disabled === true}">
-  <div class="sf-list__body--primary col-2">{{ entry.objectMeta.name }}</div>
+  <div class="col-2 col-lg-3">
+    <div class="row">
+      <div class="col-1 sf-list__indicator">
+        <span class="sf-indicator" [ngClass]="getClass(entry)" title="{{entry.podStatus.podPhase}}"></span>
+      </div>
+      <div class="sf-list__body--primary col-11">{{ entry.objectMeta.name }}</div>
+    </div>
+  </div>
   <div class="col-1">{{ entry.nodeName }}</div>
   <div class="col-2">{{ getStatus(entry) }}</div>
   <div class="col-1">{{ entry.restartCount }}</div>
@@ -8,9 +15,6 @@
     <span class="tn-badge tn-badge--pill sf-list__label" *ngFor="let label of getLabels(entry.objectMeta.labels)">
       {{ label }}
     </span>
-  </div>
-  <div class="col-1">
-    <span class="sf-indicator" [ngClass]="getClass(entry)" title="{{entry.podStatus.podPhase}}"></span>
   </div>
   <div class="col-1 actions-icon">
     <y-list-actions [entry]="entry" [entryEventHandler]="entryEventHandler" [actions]="actions"></y-list-actions>

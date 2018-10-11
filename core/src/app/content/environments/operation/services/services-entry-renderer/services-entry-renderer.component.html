@@ -1,5 +1,12 @@
 <div class="row sf-list__body" [ngClass]="{'sf-list__disabled': disabled === true}">
-  <div class="sf-list__body--primary col-2"><a routerLink="{{entry.objectMeta.name}}">{{ entry.objectMeta.name }}</a></div>
+  <div class="col-3">
+      <div class="row">
+        <div class="col-1 sf-list__indicator">
+          <span class="sf-indicator" [ngClass]="isStatusOk(entry) ? 'sf-indicator--success' : ''"></span>
+        </div>
+        <div class="sf-list__body--primary col-11"><a routerLink="{{entry.objectMeta.name}}">{{ entry.objectMeta.name }}</a></div>
+      </div>
+    </div>
   <div class="col-1 col-lg-2">{{ entry.clusterIP }}</div>
   <div class="col-3">
     <span *ngIf="entry.internalEndpoint">
@@ -15,9 +22,6 @@
     <span class="tn-badge tn-badge--pill sf-list__label" *ngFor="let label of getLabels(entry.objectMeta.labels)">
       {{ label }}
     </span>
-  </div>
-  <div class="col-1">
-    <span class="sf-indicator" [ngClass]="isStatusOk(entry) ? 'sf-indicator--success' : ''"></span>
   </div>
   <div class="col-1 actions-icon">
     <y-list-actions [entry]="entry" [entryEventHandler]="entryEventHandler" [actions]="actions"></y-list-actions>
