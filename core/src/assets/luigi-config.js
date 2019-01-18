@@ -40,75 +40,13 @@ function getNodes(context) {
     },
     {
       category: { label: 'Service Catalog', icon: 'add-coursebook' },
-      navigationContext: 'service-catalog',
-      pathSegment: 'service-catalog',
-      label: 'Catalog',
-      viewGroup: 'catalog',
-      viewUrl: config.serviceCatalogModuleUrl,
-      keepSelectedForChildren: true,
-      children: [
-        {
-          pathSegment: 'details',
-          children: [
-            {
-              pathSegment: ':serviceId',
-              viewUrl: config.serviceCatalogModuleUrl + '/details/:serviceId'
-            }
-          ]
-        }
-      ]
-    },
-    {
-      category: 'Service Catalog',
-      keepSelectedForChildren: true,
-      pathSegment: 'instances',
-      label: 'Instances',
-      viewUrl: config.serviceInstancesModuleUrl,
-      viewGroup: 'instances',
-      children: [
-        {
-          pathSegment: 'details',
-          children: [
-            {
-              pathSegment: ':name',
-              viewUrl: config.serviceInstancesModuleUrl + '/details/:name'
-            }
-          ]
-        }
-      ]
-    },
-    {
-      category: 'Service Catalog',
-      pathSegment: 'brokers',
-      label: 'Brokers',
-      viewUrl: config.serviceBrokersModuleUrl
+      pathSegment: '_service_catalog_category_placeholder_',
+      hideFromNav: true
     },
     {
       category: { label: 'Configuration', icon: 'key-user-settings' },
-      pathSegment: 'apis',
-      navigationContext: 'apis',
-      label: 'APIs',
-      viewUrl: '/consoleapp.html#/home/namespaces/' + environment + '/apis',
-      keepSelectedForChildren: true,
-      children: [
-        {
-          pathSegment: 'create',
-          viewUrl:
-            '/consoleapp.html#/home/namespaces/' + environment + '/apis/create'
-        },
-        {
-          pathSegment: 'details',
-          children: [
-            {
-              pathSegment: ':name',
-              viewUrl:
-                '/consoleapp.html#/home/namespaces/' +
-                environment +
-                '/apis/details/:name'
-            }
-          ]
-        }
-      ]
+      pathSegment: '_configuration_category_placeholder_',
+      hideFromNav: true
     },
     {
       category: 'Configuration',
@@ -150,27 +88,8 @@ function getNodes(context) {
     },
     {
       category: { label: 'Development', icon: 'source-code' },
-      pathSegment: 'lambdas',
-      navigationContext: 'lambdas',
-      label: 'Lambdas',
-      viewGroup: 'lambdas',
-      viewUrl: config.lambdasModuleUrl + '#/lambdas',
-      keepSelectedForChildren: true,
-      children: [
-        {
-          pathSegment: 'create',
-          viewUrl: config.lambdasModuleUrl + '#/create'
-        },
-        {
-          pathSegment: 'details',
-          children: [
-            {
-              pathSegment: ':lambda',
-              viewUrl: config.lambdasModuleUrl + '#/lambdas/:lambda'
-            }
-          ]
-        }
-      ]
+      pathSegment: '_development_category_placeholder_',
+      hideFromNav: true
     },
     {
       category: { label: 'Operation', icon: 'instance' },
@@ -273,7 +192,7 @@ function getNodes(context) {
       'namespace'
     ])
   ]).then(function(values) {
-    var nodeTree = staticNodes;
+    var nodeTree = [...staticNodes];
     values.forEach(function(val) {
       nodeTree = [].concat.apply(nodeTree, val);
     });
@@ -306,21 +225,28 @@ function getUiEntities(entityname, environment, placements) {
         })
         .map(function(item) {
           function buildNode(node, spec) {
-            var node = {
+            var n = {
               label: node.label,
               pathSegment: node.navigationPath.split('/').pop(),
               viewUrl: spec.viewBaseUrl
                 ? spec.viewBaseUrl + node.viewUrl
                 : node.viewUrl,
-              hideFromNav: node.showInNavigation || undefined
+              hideFromNav: node.showInNavigation === false || undefined
             };
-            return node;
+            if (node.externalLink) {
+              delete n.viewUrl;
+              delete n.pathSegment;
+              n.externalLink = {
+                url: node.externalLink,
+                sameWindow: false
+              };
+            }
+            return n;
           }
 
           function buildNodeWithChildren(specNode, spec) {
             var parentNodeSegments = specNode.navigationPath.split('/');
             var children = getDirectChildren(parentNodeSegments, spec);
-
             var node = buildNode(specNode, spec);
             if (children.length) {
               node.children = children;
@@ -329,7 +255,7 @@ function getUiEntities(entityname, environment, placements) {
           }
 
           function getDirectChildren(parentNodeSegments, spec) {
-            // process only direct childs
+            // process only direct children
             return spec.navigationNodes
               .filter(function(node) {
                 var currentNodeSegments = node.navigationPath.split('/');
@@ -347,30 +273,32 @@ function getUiEntities(entityname, environment, placements) {
               });
           }
 
-          function buildTree(spec) {
+          function buildTree(name, spec) {
             return spec.navigationNodes
               .filter(function getTopLevelNodes(node) {
                 var segments = node.navigationPath.split('/');
                 return segments.length === 1;
               })
               .map(function processTopLevelNodes(node) {
-                return buildNodeWithChildren(node, spec);
+                return buildNodeWithChildren(node, spec, name);
               })
               .map(function addSettingsForTopLevelNodes(node) {
-                if (!node.pathSegment.startsWith(segmentPrefix)) {
-                  node.pathSegment = segmentPrefix + node.pathSegment;
-                }
                 if (spec.category) {
                   node.category = spec.category;
                 }
-                node.navigationContext = spec.appName;
-                node.viewGroup = spec.appName;
-                node.keepSelectedForChildren = true;
+                if (!node.externalLink) {
+                  if (!node.pathSegment.startsWith(segmentPrefix)) {
+                    node.pathSegment = segmentPrefix + node.pathSegment;
+                  }
+                  node.navigationContext = spec.appName ? spec.appName : name;
+                  node.viewGroup = spec.navigationContext;
+                  node.keepSelectedForChildren = true;
+                }
                 return node;
               });
           }
           if (item.spec.navigationNodes) {
-            var tree = buildTree(item.spec);
+            var tree = buildTree(item.metadata.name, item.spec);
             return tree;
           }
           return [];
@@ -546,38 +474,9 @@ getBackendModules()
                     ]
                   },
                   {
-                    pathSegment: 'apps',
-                    navigationContext: 'apps',
-                    label: 'Applications',
                     category: { label: 'Integration', icon: 'overview-chart' },
-                    viewUrl: '/consoleapp.html#/home/settings/apps',
-                    keepSelectedForChildren: true,
-                    children: [
-                      {
-                        pathSegment: 'details',
-                        children: [
-                          {
-                            pathSegment: ':name',
-                            viewUrl:
-                              '/consoleapp.html#/home/settings/apps/:name'
-                          }
-                        ]
-                      }
-                    ]
-                  },
-                  {
-                    pathSegment: 'service-brokers',
-                    navigationContext: 'service-brokers',
-                    label: 'Service Brokers',
-                    category: 'Integration',
-                    viewUrl: '/consoleapp.html#/home/settings/serviceBrokers'
-                  },
-                  {
-                    pathSegment: 'idp-presets',
-                    navigationContext: 'idp-presets',
-                    label: 'IDP Presets',
-                    category: 'Integration',
-                    viewUrl: '/consoleapp.html#/home/settings/idpPresets'
+                    pathSegment: '_integration_category_placeholder_',
+                    hideFromNav: true
                   },
                   {
                     pathSegment: 'settings',
@@ -608,23 +507,12 @@ getBackendModules()
                     ]
                   },
                   {
-                    label: 'Stats & Metrics',
                     category: {
                       label: 'Diagnostics',
                       icon: 'electrocardiogram'
                     },
-                    externalLink: {
-                      url: 'https://grafana.' + k8sDomain,
-                      sameWindow: false
-                    }
-                  },
-                  {
-                    label: 'Tracing',
-                    category: 'Diagnostics',
-                    externalLink: {
-                      url: 'https://jaeger.' + k8sDomain,
-                      sameWindow: false
-                    }
+                    pathSegment: '_integration_category_placeholder_',
+                    hideFromNav: true
                   }
                 ];
                 var fetchedNodes = [].concat.apply([], cmf);
