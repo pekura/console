@@ -231,7 +231,8 @@ function getUiEntities(entityname, environment, placements) {
               viewUrl: spec.viewBaseUrl
                 ? spec.viewBaseUrl + node.viewUrl
                 : node.viewUrl,
-              hideFromNav: node.showInNavigation === false || undefined
+              hideFromNav: node.showInNavigation === false || undefined,
+              order: node.order
             };
             if (node.externalLink) {
               delete n.viewUrl;
