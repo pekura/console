@@ -319,7 +319,7 @@ function getUiEntities(entityname, environment, placements) {
                   return isDirectChild;
                 })
                 .map(function mapSecondLevelNodes(node) {
-                  // map direct childs
+                  // map direct children
                   return buildNodeWithChildren(node, spec);
                 });
             }
