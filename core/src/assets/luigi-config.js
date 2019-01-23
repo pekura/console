@@ -342,7 +342,7 @@ function getUiEntities(entityname, environment, placements) {
                       node.pathSegment = segmentPrefix + node.pathSegment;
                     }
                     node.navigationContext = spec.appName ? spec.appName : name;
-                    node.viewGroup = spec.navigationContext;
+                    node.viewGroup = node.navigationContext;
                     node.keepSelectedForChildren = true;
                   }
                   return node;
