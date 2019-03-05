@@ -9,8 +9,8 @@ build:
 	npm run build
 
 validate:
-	eslint -c .eslinterrc ./src
+	npm run conflict-check
+	npm run lint-check
 
 test:
 	CI=true npm run test
-	
