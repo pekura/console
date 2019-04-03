@@ -1,5 +1,5 @@
 import { Component, Injector, ApplicationRef } from '@angular/core';
-import LuigiClient from '@kyma-project/luigi-client';
+import * as LuigiClient from '@kyma-project/luigi-client';
 
 import { AbstractTableEntryRendererComponent } from 'app/generic-list';
 import { AppConfig } from '../../../app.config';

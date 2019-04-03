@@ -136,7 +136,7 @@ export class LambdaDetailsComponent implements OnInit, OnDestroy {
   isHTTPTriggerAuthenticated = true;
   existingHTTPEndpoint: Api;
   bindingState: Map<string, InstanceBindingState>;
-  listenerId: string;
+  listenerId: number;
   functionSizes = [];
   dropDownStates = {};
 
