@@ -1,4 +1,4 @@
-import { Component, Injector, ApplicationRef } from '@angular/core';
+import { Component, Injector, ApplicationRef, OnInit } from '@angular/core';
 import * as LuigiClient from '@kyma-project/luigi-client';
 
 import { AbstractTableEntryRendererComponent } from 'app/generic-list';
@@ -10,7 +10,7 @@ import { IDeploymentStatus } from '../../../shared/datamodel/k8s/deployment';
   templateUrl: './lambdas-entry-renderer.component.html',
   styleUrls: ['./lambdas-entry-renderer.component.scss'],
 })
-export class LambdasEntryRendererComponent extends AbstractTableEntryRendererComponent {
+export class LambdasEntryRendererComponent extends AbstractTableEntryRendererComponent implements OnInit {
   public statusText: string;
   public status: boolean;
   public functionMetrics: string;
@@ -19,11 +19,7 @@ export class LambdasEntryRendererComponent extends AbstractTableEntryRendererCom
     {
       function: 'delete',
       name: 'Delete',
-    },
-    {
-      function: 'showLogs',
-      name: 'Show Logs',
-    },
+    }
   ];
 
   constructor(private appRef: ApplicationRef, protected injector: Injector) {
@@ -34,6 +30,19 @@ export class LambdasEntryRendererComponent extends AbstractTableEntryRendererCom
       appRef.tick();
     });
     this.functionMetrics = this.getFunctionMetricsUrl(this.entry);
+  }
+
+  ngOnInit() {
+    LuigiClient.linkManager().pathExists('/home/cmf-logs').then(exists => {
+      if (exists) {
+        {
+          this.actions.push({
+            function: 'showLogs',
+            name: 'Show Logs'
+          });
+        }
+      }
+    });
   }
 
   getTrigger(entry) {
