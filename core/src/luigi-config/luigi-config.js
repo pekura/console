@@ -28,6 +28,8 @@ if (localStorage.getItem('luigi.auth')) {
   token = JSON.parse(localStorage.getItem('luigi.auth')).idToken;
 }
 
+var consoleViewGroupName = '_console_';
+
 function getNodes(context) {
   var namespace = context.namespaceId;
   var staticNodes = [
@@ -420,7 +422,11 @@ async function getUiEntities(entityname, namespace, placements) {
                       node.pathSegment = segmentPrefix + node.pathSegment;
                     }
                     node.navigationContext = spec.appName ? spec.appName : name;
-                    node.viewGroup = node.navigationContext;
+                    if (node.viewUrl && node.viewUrl.indexOf(window.location.origin + '/') === 0) {
+                      node.viewGroup = consoleViewGroupName;
+                    } else {
+                      node.viewGroup = node.navigationContext;
+                    }
                     node.keepSelectedForChildren = true;
                   }
 
@@ -719,6 +725,7 @@ Promise.all([getBackendModules(), getSelfSubjectRulesReview(), getFreshKeys()])
               idToken: token,
               backendModules
             },
+            viewGroup: consoleViewGroupName,
             children: function () {
               return getUiEntities('clustermicrofrontends', undefined, [
                 'cluster'
@@ -838,6 +845,7 @@ Promise.all([getBackendModules(), getSelfSubjectRulesReview(), getFreshKeys()])
         skipRoutingForUrlPatterns: [/access_token=/, /id_token=/]
       },
       settings: {
+        cacheViewGroups: true,
         responsiveNavigation: 'simpleMobileOnly',
         header: () => {
           const logo =
