@@ -30,6 +30,32 @@ if (localStorage.getItem('luigi.auth')) {
 
 var consoleViewGroupName = '_console_';
 
+let navigation = {
+  viewGroupSettings: {
+    _console_ : {
+      preloadUrl: '/consoleapp.html#/home/preload'
+    }
+  },
+  nodeAccessibilityResolver: navigationPermissionChecker,
+  contextSwitcher: {
+    defaultLabel: 'Select Namespace ...',
+    parentNodePath: '/home/namespaces', // absolute path
+    lazyloadOptions: true, // load options on click instead on page load
+    options: getNamespaces,
+    actions: [
+      {
+        label: '+ New Namespace',
+        link: '/home/workspace?~showModal=true'
+      },
+      {
+        label: 'Show all namespaces',
+        link: '/home/workspace?~allNamespaces=true',
+        position: 'bottom'
+      }
+    ]
+  }
+};
+
 function getNodes(context) {
   var namespace = context.namespaceId;
   var staticNodes = [
@@ -192,7 +218,7 @@ function getNodes(context) {
     }
   ];
   return Promise.all([
-    getUiEntities('microfrontends', namespace),
+    getUiEntities('microfrontends', namespace, []),
     getUiEntities('clustermicrofrontends', namespace, [
       'namespace',
       'namespace'
@@ -426,6 +452,16 @@ async function getUiEntities(entityname, namespace, placements) {
                       node.viewGroup = consoleViewGroupName;
                     } else {
                       node.viewGroup = node.navigationContext;
+                      if (node.viewGroup === 'lambdasmicrofrontend') {
+                        let preloadUrl = node.viewUrl;
+                        if (preloadUrl.indexOf('#') >= 0) {
+                          preloadUrl = preloadUrl.substr(0, preloadUrl.indexOf('#'));
+                        }
+                        preloadUrl += '#preload';
+                        navigation.viewGroupSettings.lambdasmicrofrontend = {
+                          preloadUrl
+                        };
+                      }
                     }
                     node.keepSelectedForChildren = true;
                   }
@@ -689,6 +725,112 @@ Promise.all([getBackendModules(), getSelfSubjectRulesReview(), getFreshKeys()])
   )
   // 'Finally' not supported by IE and FIREFOX (if 'finally' is needed, update your .babelrc)
   .then(() => {
+    navigation.nodes = () => [
+      {
+        pathSegment: 'home',
+        hideFromNav: true,
+        context: {
+          idToken: token,
+          backendModules
+        },
+        viewGroup: consoleViewGroupName,
+        children: function () {
+          return getUiEntities('clustermicrofrontends', undefined, [
+            'cluster'
+          ]).then(function (cmf) {
+            var staticNodes = [
+              {
+                pathSegment: 'workspace',
+                label: 'Namespaces',
+                viewUrl:
+                  '/consoleapp.html#/home/namespaces/workspace?showModal={nodeParams.showModal}&allNamespaces={nodeParams.allNamespaces}',
+                icon: 'dimension'
+              },
+              {
+                pathSegment: 'namespaces',
+                viewUrl: '/consoleapp.html#/home/namespaces/workspace',
+                hideFromNav: true,
+                children: [
+                  {
+                    pathSegment: ':namespaceId',
+                    context: {
+                      environmentId: ':namespaceId',
+                      namespaceId: ':namespaceId'
+                    },
+                    children: getNodes,
+                    navigationContext: 'namespaces',
+                    defaultChildNode: 'details'
+                  }
+                ]
+              },
+              {
+                category: { label: 'Integration', icon: 'overview-chart' },
+                pathSegment: '_integration_category_placeholder_',
+                hideFromNav: true
+              },
+              {
+                pathSegment: 'settings',
+                navigationContext: 'settings',
+                label: 'General Settings',
+                category: { label: 'Settings', icon: 'settings' },
+                viewUrl: '/consoleapp.html#/home/settings/organisation'
+              },
+              {
+                pathSegment: 'global-permissions',
+                navigationContext: 'global-permissions',
+                label: 'Global Permissions',
+                category: 'Settings',
+                viewUrl:
+                  '/consoleapp.html#/home/settings/globalPermissions',
+                keepSelectedForChildren: true,
+                children: [
+                  {
+                    pathSegment: 'roles',
+                    children: [
+                      {
+                        pathSegment: ':name',
+                        viewUrl:
+                          '/consoleapp.html#/home/settings/globalPermissions/roles/:name'
+                      }
+                    ]
+                  }
+                ],
+                adminOnly: true
+              },
+              {
+                category: {
+                  label: 'Diagnostics',
+                  icon: 'electrocardiogram'
+                },
+                pathSegment: '_integration_category_placeholder_',
+                hideFromNav: true
+              }
+            ];
+            if (cmf.length > 0) {
+              cmf.forEach(clusterMF => {
+                if (clusterMF[0]) {
+                  clusterMF[0].adminOnly = true;
+                }
+              });
+            }
+            var fetchedNodes = [].concat.apply([], cmf);
+            return [].concat.apply(staticNodes, fetchedNodes);
+          });
+        }
+      },
+      {
+        pathSegment: 'docs',
+        viewUrl: config.docsModuleUrl,
+        label: 'Docs',
+        hideSideNav: true,
+        context: {
+          idToken: token,
+          backendModules
+        },
+        icon: 'sys-help'
+      }
+    ],
+
     Luigi.setConfig({
       auth: {
         use: 'openIdConnect',
@@ -715,137 +857,12 @@ Promise.all([getBackendModules(), getSelfSubjectRulesReview(), getFreshKeys()])
           }
         }
       },
-      navigation: {
-        nodeAccessibilityResolver: navigationPermissionChecker,
-        nodes: () => [
-          {
-            pathSegment: 'home',
-            hideFromNav: true,
-            context: {
-              idToken: token,
-              backendModules
-            },
-            viewGroup: consoleViewGroupName,
-            children: function () {
-              return getUiEntities('clustermicrofrontends', undefined, [
-                'cluster'
-              ]).then(function (cmf) {
-                var staticNodes = [
-                  {
-                    pathSegment: 'workspace',
-                    label: 'Namespaces',
-                    viewUrl:
-                      '/consoleapp.html#/home/namespaces/workspace?showModal={nodeParams.showModal}&allNamespaces={nodeParams.allNamespaces}',
-                    icon: 'dimension'
-                  },
-                  {
-                    pathSegment: 'namespaces',
-                    viewUrl: '/consoleapp.html#/home/namespaces/workspace',
-                    hideFromNav: true,
-                    children: [
-                      {
-                        pathSegment: ':namespaceId',
-                        context: {
-                          environmentId: ':namespaceId',
-                          namespaceId: ':namespaceId'
-                        },
-                        children: getNodes,
-                        navigationContext: 'namespaces',
-                        defaultChildNode: 'details'
-                      }
-                    ]
-                  },
-                  {
-                    category: { label: 'Integration', icon: 'overview-chart' },
-                    pathSegment: '_integration_category_placeholder_',
-                    hideFromNav: true
-                  },
-                  {
-                    pathSegment: 'settings',
-                    navigationContext: 'settings',
-                    label: 'General Settings',
-                    category: { label: 'Settings', icon: 'settings' },
-                    viewUrl: '/consoleapp.html#/home/settings/organisation'
-                  },
-                  {
-                    pathSegment: 'global-permissions',
-                    navigationContext: 'global-permissions',
-                    label: 'Global Permissions',
-                    category: 'Settings',
-                    viewUrl:
-                      '/consoleapp.html#/home/settings/globalPermissions',
-                    keepSelectedForChildren: true,
-                    children: [
-                      {
-                        pathSegment: 'roles',
-                        children: [
-                          {
-                            pathSegment: ':name',
-                            viewUrl:
-                              '/consoleapp.html#/home/settings/globalPermissions/roles/:name'
-                          }
-                        ]
-                      }
-                    ],
-                    adminOnly: true
-                  },
-                  {
-                    category: {
-                      label: 'Diagnostics',
-                      icon: 'electrocardiogram'
-                    },
-                    pathSegment: '_integration_category_placeholder_',
-                    hideFromNav: true
-                  }
-                ];
-                if (cmf.length > 0) {
-                  cmf.forEach(clusterMF => {
-                    if (clusterMF[0]) {
-                      clusterMF[0].adminOnly = true;
-                    }
-                  });
-                }
-                var fetchedNodes = [].concat.apply([], cmf);
-                return [].concat.apply(staticNodes, fetchedNodes);
-              });
-            }
-          },
-          {
-            pathSegment: 'docs',
-            viewUrl: config.docsModuleUrl,
-            label: 'Docs',
-            hideSideNav: true,
-            context: {
-              idToken: token,
-              backendModules
-            },
-            icon: 'sys-help'
-          }
-        ],
-        contextSwitcher: {
-          defaultLabel: 'Select Namespace ...',
-          parentNodePath: '/home/namespaces', // absolute path
-          lazyloadOptions: true, // load options on click instead on page load
-          options: getNamespaces,
-          actions: [
-            {
-              label: '+ New Namespace',
-              link: '/home/workspace?~showModal=true'
-            },
-            {
-              label: 'Show all namespaces',
-              link: '/home/workspace?~allNamespaces=true',
-              position: 'bottom'
-            }
-          ]
-        }
-      },
+      navigation,
       routing: {
         nodeParamPrefix: '~',
         skipRoutingForUrlPatterns: [/access_token=/, /id_token=/]
       },
       settings: {
-        cacheViewGroups: true,
         responsiveNavigation: 'simpleMobileOnly',
         header: () => {
           const logo =
