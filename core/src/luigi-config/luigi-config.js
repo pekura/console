@@ -1,4 +1,5 @@
 import LuigiClient from '@kyma-project/luigi-client';
+import rbacRulesMatched from './rbac-rules-matcher';
 
 var clusterConfig = window['clusterConfig'];
 var k8sDomain = (clusterConfig && clusterConfig['domain']) || 'kyma.local';
@@ -248,7 +249,7 @@ function getNodes(context) {
     const settings = {
       text: `Namespace ${errParsed.details.name} not found.`,
       type: 'error'
-     }
+     };
      LuigiClient
       .uxManager()
       .showAlert(settings)
@@ -333,7 +334,8 @@ async function getUiEntities(entityname, namespace, placements) {
                   settings: node.settings
                     ? { ...node.settings, ...(node.context || {}) }
                     : {}
-                }
+                },
+                requiredPermissions: node.requiredPermissions || undefined
               };
 
               n.context.requiredBackendModules =
@@ -521,10 +523,9 @@ function fetchFromGraphQL(query, variables, gracefully) {
           reject(xmlHttp.response);
         }
       } else if (xmlHttp.readyState == 4 && xmlHttp.status != 200) {
-        // TODO: investigate it, falls into infinite loop
-        // if (xmlHttp.status === 401) {
-        // relogin();
-        // }
+        if (xmlHttp.status === 401) {
+          relogin();
+        }
         if (!gracefully) {
           reject(xmlHttp.response);
         } else {
@@ -575,52 +576,6 @@ function postToKyma(url, body) {
   });
 }
 
-function getSelfSubjectRulesReview() {
-  const url =
-    k8sServerUrl + '/apis/authorization.k8s.io/v1/selfsubjectrulesreviews ';
-  const body = {
-    kind: 'SelfSubjectRulesReview',
-    apiVersion: 'authorization.k8s.io/v1',
-    spec: {
-      namespace: '*'
-    }
-  };
-  return new Promise(function (resolve, reject) {
-    postToKyma(url, body).then(
-      res => {
-        let resourceRules = [];
-        if (res.status) {
-          resourceRules = res.status.resourceRules;
-        }
-        resolve(resourceRules);
-      },
-      err => {
-        reject(err);
-      }
-    );
-  });
-}
-
-function checkRules(nodeToCheckPermissionsFor) {
-  let hasPermissions = false;
-  if (nodeToCheckPermissionsFor.adminOnly) {
-    if (selfSubjectRulesReview.length > 0) {
-      selfSubjectRulesReview.forEach(rule => {
-        if (
-          rule.verbs.includes('*') &&
-          (rule.apiGroups.includes('') || rule.apiGroups.includes('*')) &&
-          rule.resources.includes('*')
-        ) {
-          hasPermissions = true;
-        }
-      });
-    }
-  } else {
-    hasPermissions = true;
-  }
-  return hasPermissions;
-}
-
 function checkRequiredBackendModules(nodeToCheckPermissionsFor) {
   let hasPermissions = true;
   if (
@@ -644,14 +599,25 @@ function checkRequiredBackendModules(nodeToCheckPermissionsFor) {
 }
 
 function navigationPermissionChecker(nodeToCheckPermissionsFor) {
+
+  const noRulesApplied =
+    nodeToCheckPermissionsFor.requiredPermissions === null ||
+    nodeToCheckPermissionsFor.requiredPermissions === undefined ||
+    nodeToCheckPermissionsFor.requiredPermissions.length === 0;
+
   return (
-    checkRules(nodeToCheckPermissionsFor) &&
+    (noRulesApplied || rbacRulesMatched(nodeToCheckPermissionsFor.requiredPermissions, selfSubjectRulesReview)) &&
     checkRequiredBackendModules(nodeToCheckPermissionsFor)
   );
 }
 
-function getBackendModules() {
+function getConsoleInitData() {
   const query = `query {
+    selfSubjectRules {
+      verbs
+      resources
+      apiGroups
+		}
     backendModules{
       name
     }
@@ -696,22 +662,29 @@ function getFreshKeys() {
 
 let backendModules = [];
 let selfSubjectRulesReview = [];
-Promise.all([getBackendModules(), getSelfSubjectRulesReview(), getFreshKeys()])
+var initPromises = [getFreshKeys()];
+
+if(token){
+  initPromises.push(getConsoleInitData())
+}
+
+Promise.all(initPromises)
   .then(
     res => {
-      const modules = res[0];
-      const subjectRules = res[1];
-      if (
-        modules &&
-        modules.backendModules &&
-        modules.backendModules.length > 0
-      ) {
-        modules.backendModules.forEach(backendModule => {
-          backendModules.push(backendModule.name);
-        });
-      }
-      if (subjectRules && subjectRules.length > 0) {
-        selfSubjectRulesReview = subjectRules;
+      if(token){
+        const modules = res[1].backendModules;
+        const subjectRules = res[1].selfSubjectRules;
+        if (
+          modules &&
+          modules.length > 0
+        ) {
+          modules.forEach(backendModule => {
+            backendModules.push(backendModule.name);
+          });
+        }
+        if (subjectRules && subjectRules.length > 0) {
+          selfSubjectRulesReview = subjectRules;
+        }
       }
     },
     err => {
@@ -790,7 +763,11 @@ Promise.all([getBackendModules(), getSelfSubjectRulesReview(), getFreshKeys()])
                     ]
                   }
                 ],
-                adminOnly: true
+                requiredPermissions : [{
+                  apiGroup : "rbac.authorization.k8s.io",
+                  resource : "clusterrolebindings",
+                  verbs : ["create"]
+                }]
               },
               {
                 category: {
@@ -801,13 +778,6 @@ Promise.all([getBackendModules(), getSelfSubjectRulesReview(), getFreshKeys()])
                 hideFromNav: true
               }
             ];
-            if (cmf.length > 0) {
-              cmf.forEach(clusterMF => {
-                if (clusterMF[0]) {
-                  clusterMF[0].adminOnly = true;
-                }
-              });
-            }
             var fetchedNodes = [].concat.apply([], cmf);
             return [].concat.apply(staticNodes, fetchedNodes);
           });
@@ -939,3 +909,4 @@ function setLimitExceededErrorsMessages(limitExceededErrors) {
   });
   return limitExceededErrorscomposed;
 }
+
