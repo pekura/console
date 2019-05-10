@@ -452,14 +452,9 @@ async function getUiEntities(entityname, namespace, placements) {
                       node.viewGroup = consoleViewGroupName;
                     } else {
                       node.viewGroup = node.navigationContext;
-                      if (node.viewGroup === 'lambdasmicrofrontend') {
-                        let preloadUrl = node.viewUrl;
-                        if (preloadUrl.indexOf('#') >= 0) {
-                          preloadUrl = preloadUrl.substr(0, preloadUrl.indexOf('#'));
-                        }
-                        preloadUrl += '#preload';
-                        navigation.viewGroupSettings.lambdasmicrofrontend = {
-                          preloadUrl
+                      if (spec.preloadUrl) {
+                        navigation.viewGroupSettings[node.viewGroup] = {
+                          preloadUrl: spec.preloadUrl
                         };
                       }
                     }
