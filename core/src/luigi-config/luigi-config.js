@@ -1,5 +1,6 @@
 import LuigiClient from '@kyma-project/luigi-client';
 import rbacRulesMatched from './rbac-rules-matcher';
+import convertToNavigationTree from './microfrontend-converter';
 
 var clusterConfig = window['clusterConfig'];
 var k8sDomain = (clusterConfig && clusterConfig['domain']) || 'kyma.local';
@@ -321,153 +322,8 @@ async function getUiEntities(entityname, namespace, placements) {
             return !placements || placements.includes(item.spec.placement);
           })
           .map(function (item) {
-            function buildNode(node, spec) {
-              var n = {
-                label: node.label,
-                pathSegment: node.navigationPath.split('/').pop(),
-                viewUrl: spec.viewBaseUrl
-                  ? spec.viewBaseUrl + node.viewUrl
-                  : node.viewUrl,
-                hideFromNav: node.showInNavigation === false || undefined,
-                order: node.order,
-                context: {
-                  settings: node.settings
-                    ? { ...node.settings, ...(node.context || {}) }
-                    : {}
-                },
-                requiredPermissions: node.requiredPermissions || undefined
-              };
-
-              n.context.requiredBackendModules =
-                node.requiredBackendModules || undefined;
-
-              if (node.externalLink) {
-                delete n.viewUrl;
-                delete n.pathSegment;
-                n.externalLink = {
-                  url: node.externalLink,
-                  sameWindow: false
-                };
-              }
-
-              processNodeForLocalDevelopment(n);
-              return n;
-            }
-
-            function processNodeForLocalDevelopment(node) {
-              const isLocalDev = window.location.href.startsWith(
-                'http://console-dev.kyma.local:4200'
-              );
-              if (!isLocalDev || !node.viewUrl) {
-                return;
-              }
-              if (node.viewUrl.startsWith('https://console.kyma.local')) {
-                node.viewUrl =
-                  'http://console-dev.kyma.local:4200' +
-                  node.viewUrl.substring('https://console.kyma.local'.length);
-              } else if (
-                node.viewUrl.startsWith('https://catalog.kyma.local')
-              ) {
-                node.viewUrl =
-                  config.serviceCatalogModuleUrl +
-                  node.viewUrl.substring('https://catalog.kyma.local'.length);
-              } else if (
-                node.viewUrl.startsWith('https://instances.kyma.local')
-              ) {
-                node.viewUrl =
-                  config.serviceInstancesModuleUrl +
-                  node.viewUrl.substring('https://instances.kyma.local'.length);
-              } else if (
-                node.viewUrl.startsWith('https://brokers.kyma.local')
-              ) {
-                node.viewUrl =
-                  config.serviceBrokersModuleUrl +
-                  node.viewUrl.substring('https://brokers.kyma.local'.length);
-              } else if (
-                node.viewUrl.startsWith('https://lambdas-ui.kyma.local')
-              ) {
-                node.viewUrl =
-                  config.lambdasModuleUrl +
-                  node.viewUrl.substring(
-                    'https://lambdas-ui.kyma.local'.length
-                  );
-              } else if (node.viewUrl.startsWith('https://log-ui.kyma.local')) {
-                node.viewUrl =
-                  config.logsModuleUrl +
-                  node.viewUrl.substring('https://log-ui.kyma.local'.length);
-              } else if(node.viewUrl.startsWith('https://add-ons.kyma.local')) {
-                node.viewUrl =
-                  config.addOnsModuleUrl +
-                  node.viewUrl.substring('https://add-ons.kyma.local'.length);
-              }
-              return node;
-            }
-
-            function buildNodeWithChildren(specNode, spec) {
-              var parentNodeSegments = specNode.navigationPath.split('/');
-              var children = getDirectChildren(parentNodeSegments, spec);
-              var node = buildNode(specNode, spec);
-              if (children.length) {
-                node.children = children;
-              }
-              return node;
-            }
-
-            function getDirectChildren(parentNodeSegments, spec) {
-              // process only direct children
-              return spec.navigationNodes
-                .filter(function (node) {
-                  var currentNodeSegments = node.navigationPath.split('/');
-                  var isDirectChild =
-                    parentNodeSegments.length ===
-                    currentNodeSegments.length - 1 &&
-                    parentNodeSegments.filter(function (segment) {
-                      return currentNodeSegments.includes(segment);
-                    }).length > 0;
-                  return isDirectChild;
-                })
-                .map(function mapSecondLevelNodes(node) {
-                  // map direct children
-                  return buildNodeWithChildren(node, spec);
-                });
-            }
-
-            function buildTree(name, spec) {
-              return spec.navigationNodes
-                .filter(function getTopLevelNodes(node) {
-                  var segments = node.navigationPath.split('/');
-                  return segments.length === 1;
-                })
-                .map(function processTopLevelNodes(node) {
-                  return buildNodeWithChildren(node, spec, name);
-                })
-                .map(function addSettingsForTopLevelNodes(node) {
-                  if (spec.category) {
-                    node.category = spec.category;
-                  }
-                  if (!node.externalLink) {
-                    if (!node.pathSegment.startsWith(segmentPrefix)) {
-                      node.pathSegment = segmentPrefix + node.pathSegment;
-                    }
-                    node.navigationContext = spec.appName ? spec.appName : name;
-                    if (node.viewUrl && node.viewUrl.indexOf(window.location.origin + '/') === 0) {
-                      node.viewGroup = consoleViewGroupName;
-                    } else {
-                      node.viewGroup = node.navigationContext;
-                      if (spec.preloadUrl) {
-                        navigation.viewGroupSettings[node.viewGroup] = {
-                          preloadUrl: spec.preloadUrl
-                        };
-                      }
-                    }
-                    node.keepSelectedForChildren = true;
-                  }
-
-                  return node;
-                });
-            }
             if (item.spec.navigationNodes) {
-              var tree = buildTree(item.metadata.name, item.spec);
+              var tree = convertToNavigationTree(item.metadata.name, item.spec, config, navigation, consoleViewGroupName, segmentPrefix);
               return tree;
             }
             return [];
@@ -621,6 +477,20 @@ function getConsoleInitData() {
     backendModules{
       name
     }
+    clusterMicrofrontends{
+      name
+      category
+      viewBaseUrl
+      placement
+      navigationNodes{
+        label
+        navigationPath
+        viewUrl
+        showInNavigation
+        order
+        settings
+      }
+    }
   }`;
   const gracefully = true;
   return fetchFromGraphQL(query, undefined, gracefully);
@@ -662,6 +532,7 @@ function getFreshKeys() {
 
 let backendModules = [];
 let selfSubjectRulesReview = [];
+let clusterMicrofrontendNodes = [];
 var initPromises = [getFreshKeys()];
 
 if(token){
@@ -674,6 +545,7 @@ Promise.all(initPromises)
       if(token){
         const modules = res[1].backendModules;
         const subjectRules = res[1].selfSubjectRules;
+        const cmfs = res[1].clusterMicrofrontends;
         if (
           modules &&
           modules.length > 0
@@ -684,6 +556,18 @@ Promise.all(initPromises)
         }
         if (subjectRules && subjectRules.length > 0) {
           selfSubjectRulesReview = subjectRules;
+        }
+        if (cmfs && cmfs.length > 0) {
+          clusterMicrofrontendNodes =
+            cmfs
+              .filter(cmf => cmf.placement === 'cluster')
+              .map(cmf => {
+                if (cmf.navigationNodes) {
+                  var tree = convertToNavigationTree(cmf.name, cmf, config, navigation, consoleViewGroupName, 'cmf-');
+                  return tree;
+                }
+                return [];
+              });
         }
       }
     },
@@ -703,84 +587,80 @@ Promise.all(initPromises)
         },
         viewGroup: consoleViewGroupName,
         children: function () {
-          return getUiEntities('clustermicrofrontends', undefined, [
-            'cluster'
-          ]).then(function (cmf) {
-            var staticNodes = [
-              {
-                pathSegment: 'workspace',
-                label: 'Namespaces',
-                viewUrl:
-                  '/consoleapp.html#/home/namespaces/workspace?showModal={nodeParams.showModal}&allNamespaces={nodeParams.allNamespaces}',
-                icon: 'dimension'
+          var staticNodes = [
+            {
+              pathSegment: 'workspace',
+              label: 'Namespaces',
+              viewUrl:
+                '/consoleapp.html#/home/namespaces/workspace?showModal={nodeParams.showModal}&allNamespaces={nodeParams.allNamespaces}',
+              icon: 'dimension'
+            },
+            {
+              pathSegment: 'namespaces',
+              viewUrl: '/consoleapp.html#/home/namespaces/workspace',
+              hideFromNav: true,
+              children: [
+                {
+                  pathSegment: ':namespaceId',
+                  context: {
+                    environmentId: ':namespaceId',
+                    namespaceId: ':namespaceId'
+                  },
+                  children: getNodes,
+                  navigationContext: 'namespaces',
+                  defaultChildNode: 'details'
+                }
+              ]
+            },
+            {
+              category: { label: 'Integration', icon: 'overview-chart' },
+              pathSegment: '_integration_category_placeholder_',
+              hideFromNav: true
+            },
+            {
+              pathSegment: 'settings',
+              navigationContext: 'settings',
+              label: 'General Settings',
+              category: { label: 'Settings', icon: 'settings' },
+              viewUrl: '/consoleapp.html#/home/settings/organisation'
+            },
+            {
+              pathSegment: 'global-permissions',
+              navigationContext: 'global-permissions',
+              label: 'Global Permissions',
+              category: 'Settings',
+              viewUrl:
+                '/consoleapp.html#/home/settings/globalPermissions',
+              keepSelectedForChildren: true,
+              children: [
+                {
+                  pathSegment: 'roles',
+                  children: [
+                    {
+                      pathSegment: ':name',
+                      viewUrl:
+                        '/consoleapp.html#/home/settings/globalPermissions/roles/:name'
+                    }
+                  ]
+                }
+              ],
+              requiredPermissions : [{
+                apiGroup : "rbac.authorization.k8s.io",
+                resource : "clusterrolebindings",
+                verbs : ["create"]
+              }]
+            },
+            {
+              category: {
+                label: 'Diagnostics',
+                icon: 'electrocardiogram'
               },
-              {
-                pathSegment: 'namespaces',
-                viewUrl: '/consoleapp.html#/home/namespaces/workspace',
-                hideFromNav: true,
-                children: [
-                  {
-                    pathSegment: ':namespaceId',
-                    context: {
-                      environmentId: ':namespaceId',
-                      namespaceId: ':namespaceId'
-                    },
-                    children: getNodes,
-                    navigationContext: 'namespaces',
-                    defaultChildNode: 'details'
-                  }
-                ]
-              },
-              {
-                category: { label: 'Integration', icon: 'overview-chart' },
-                pathSegment: '_integration_category_placeholder_',
-                hideFromNav: true
-              },
-              {
-                pathSegment: 'settings',
-                navigationContext: 'settings',
-                label: 'General Settings',
-                category: { label: 'Settings', icon: 'settings' },
-                viewUrl: '/consoleapp.html#/home/settings/organisation'
-              },
-              {
-                pathSegment: 'global-permissions',
-                navigationContext: 'global-permissions',
-                label: 'Global Permissions',
-                category: 'Settings',
-                viewUrl:
-                  '/consoleapp.html#/home/settings/globalPermissions',
-                keepSelectedForChildren: true,
-                children: [
-                  {
-                    pathSegment: 'roles',
-                    children: [
-                      {
-                        pathSegment: ':name',
-                        viewUrl:
-                          '/consoleapp.html#/home/settings/globalPermissions/roles/:name'
-                      }
-                    ]
-                  }
-                ],
-                requiredPermissions : [{
-                  apiGroup : "rbac.authorization.k8s.io",
-                  resource : "clusterrolebindings",
-                  verbs : ["create"]
-                }]
-              },
-              {
-                category: {
-                  label: 'Diagnostics',
-                  icon: 'electrocardiogram'
-                },
-                pathSegment: '_integration_category_placeholder_',
-                hideFromNav: true
-              }
-            ];
-            var fetchedNodes = [].concat.apply([], cmf);
-            return [].concat.apply(staticNodes, fetchedNodes);
-          });
+              pathSegment: '_integration_category_placeholder_',
+              hideFromNav: true
+            }
+          ];
+          var fetchedNodes = [].concat.apply([], clusterMicrofrontendNodes);
+          return [].concat.apply(staticNodes, fetchedNodes);
         }
       },
       {
@@ -795,7 +675,6 @@ Promise.all(initPromises)
         icon: 'sys-help'
       }
     ],
-
     Luigi.setConfig({
       auth: {
         use: 'openIdConnect',
